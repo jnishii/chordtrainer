@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "chordtrainer"
+version = "0.1.0"
+description = ""
+authors = ["nishii <nishii@yamaguchi-u.ac.jp>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+mido = "^1.2.10"
+python-rtmidi = "^1.4.9"
+pygame = "^2.1.2"
+Kivy = "^2.1.0"
+numpy = "^1.23.2"
+matplotlib = "^3.5.3"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
