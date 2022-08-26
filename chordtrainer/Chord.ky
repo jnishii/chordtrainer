@@ -1,0 +1,5 @@
+Label:
+    text_size: self.size
+    halign: 'center'
+    valign: 'middle'
+    markup: True
