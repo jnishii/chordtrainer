@@ -78,12 +78,13 @@ names = names2 | names3 | names4
 
 notes2 = [m2, mj2, m3, mj3, p4, tritone, p5, m6, mj6, m7, mj7]
 notes27 = [m7, mj7, m3, p5, p4]
-notes3 = [major, minor, aug, dim]
+notes3 = [major, minor, aug, dim, sus4]
 notes4 = [mj7th, d7th]
 
 chords = [major, minor]
 chords = notes27
 chords = [d7th, mj7th]
+#chords = notes4 + [aug, dim, m7, mj7]
 #chords = notes3
 
 
@@ -134,7 +135,7 @@ class playChords():
         root = rnd.randint(self.note_range[0], self.note_range[1])
 
         chord_id = rnd.randint(0, len(self.chords)-1)
-        if self.print_root:
+        if len(self.chords[chord_id]) > 2:
             chord_name = "{}{}".format(
                 midi_names[root], names[self.chords[chord_id]])
         else:
@@ -165,6 +166,8 @@ class ChordWidget(Widget):
 
     def __init__(self, *args, **kwargs):
         Widget.__init__(self, *args, **kwargs)
+        self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self.on_keyboard_down)
 
         self.chords = chords  # Todo: chords should be given by an arg or menu
         print_root = False if len(self.chords[0]) == 2 else True
@@ -202,8 +205,7 @@ class ChordWidget(Widget):
         self.event = Clock.schedule_interval(self.update, self.dt)
         self.flag_event = True
 
-    def on_touch_down(self, position):
-
+    def toggle_schedule(self):
         if self.flag_event == True:
             Clock.unschedule(self.event)
             self.play_chords.chord_on(
@@ -212,6 +214,24 @@ class ChordWidget(Widget):
         else:
             self.event = Clock.schedule_interval(self.update, self.dt)
             self.flag_event = True
+        return True
+
+    def keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self.on_keyboard_down)
+        self._keyboard = None
+
+    def on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        print("keycode:", keyboard, keycode, text, modifiers)
+        if keycode[1] == 'spacebar':
+            self.toggle_schedule()
+        else:
+            self.play_chords.chord_on(
+                self.chords[self.chord_id], root=self.root)
+        return True
+
+    def on_touch_down(self, position):
+        self.toggle_schedule()
+
         return True
 
     def update_circle(self, chord_id, chord_name):
