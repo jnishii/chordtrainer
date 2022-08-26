@@ -1,5 +1,7 @@
-Label:
-    text_size: self.size
-    halign: 'center'
-    valign: 'middle'
-    markup: True
+canvas:
+    Label:
+        text_size: self.size
+        text: "hello"
+        halign: 'center'
+        valign: 'middle'
+        markup: True

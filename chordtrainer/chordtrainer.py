@@ -18,12 +18,12 @@ import warnings
 warnings.simplefilter('ignore')
 
 
-midi_note = range(132)
+midi_notes = range(132)
 # note_name=["C","C[sup]#[/sup]","D","D[sup]#[/sup]","E","F","F[sup]#[/sup]","G","G[sup]#[/sup]","A","A[sup]#[/sup]","B"]*11
-note_name = ["C", "C#", "D", "D#", "E",
-             "F", "F#", "G", "G#", "A", "A#", "B"]*11
-midi_name = dict(zip(midi_note, note_name))
-print(midi_name[10])
+note_names = ["C", "C#", "D", "D#", "E",
+              "F", "F#", "G", "G#", "A", "A#", "B"]*11
+midi_names = dict(zip(midi_notes, note_names))
+print(midi_names[10])
 
 # 2 notes
 m2 = (0, 1)
@@ -58,33 +58,46 @@ major = (0, 4, 7)
 minor = (0, 3, 7)
 aug = (0, 4, 8)
 dim = (0, 3, 6)
+sus4 = (0, 5, 7)
 names3 = {
-    major: "", minor: "[sub]m[/sub]", aug: "[sup]-5[/sup]", dim: "[sub]dim[/sub]"
+    major: "", minor: "[sub]m[/sub]", aug: "[sup]-5[/sup]", dim: "[sub]dim[/sub]", sus4: "[sub]sus4[/sub]",
 }
-# 4 notes
-m7th = (0, 4, 7, 11)
-d7th = (0, 4, 7, 10)
 
+# 4 notes
+mj7th = (0, 4, 7, 11)
+d7th = (0, 4, 7, 10)
+m7th = (0, 3, 7, 10)
+dim7th = (0, 3, 6, 9)
 names4 = {
-    m7th: "[sub]M7[/sub]", d7th: "[sub]7[/sub]"
+    mj7th: "[sub]M7[/sub]", d7th: "[sub]7[/sub]",  m7th: "[sub]m7[/sub]",  dim7th: "[sub]dim7[/sub]"
 }
+
+#
 
 names = names2 | names3 | names4
 
 notes2 = [m2, mj2, m3, mj3, p4, tritone, p5, m6, mj6, m7, mj7]
-notes27= [m7,mj7, m3, p5, p4]
+notes27 = [m7, mj7, m3, p5, p4]
 notes3 = [major, minor, aug, dim]
-notes4 = [m7th, d7th]
+notes4 = [mj7th, d7th]
 
 chords = [major, minor]
 chords = notes27
-#chords=[major, d7th]
+chords = [d7th, mj7th]
+#chords = notes3
 
 
 class playChords():
-    def __init__(self, print_root=True) -> None:
+    def __init__(self, chords, print_root=True, note_range=[48, 81]) -> None:
 
+        self.chords = chords
         self.print_root = print_root
+        # 110Hz: 45 (MIDI note)
+        # 220Hz: 57
+        # 440Hz: 69
+        # 880Hz: 81
+        self.note_range = note_range  # range of root note
+
         m.init()            # MIDIデバイスを初期化
         self.get_midi_devices()
         device_id = 2
@@ -99,15 +112,17 @@ class playChords():
 
     def chord_on(self, chord, root=0, vel=60):
         for n in chord:
-            vel_n=vel
+            vel_n = vel
             if n == chord[0]:
-                 vel_n+= 30
+                vel_n += 30
             if n == chord[-1]:
-                 vel_n += 20
+                vel_n += 20
             vel_n += rnd.randint(-15, 15)
 
-            if  vel_n > 127: vel_n = 127 
-            if  vel_n < 0:   vel_n = 0
+            if vel_n > 127:
+                vel_n = 127
+            if vel_n < 0:
+                vel_n = 0
 
             self.midiout.note_on(root + n,  vel_n)
 
@@ -116,38 +131,33 @@ class playChords():
             self.midiout.note_off(root + n)
 
     def select_chord(self):
-        # 110Hz: 45 (MIDI note)
-        # 220Hz: 57
-        # 440Hz: 69
-        # 880Hz: 81
-        # 48(C)から72(C)の間の24音からランダムに選んでベース音にする
-        root = rnd.randint(48, 72)
-        chord_id = rnd.randint(0, len(chords)-1)
+        root = rnd.randint(self.note_range[0], self.note_range[1])
+
+        chord_id = rnd.randint(0, len(self.chords)-1)
         if self.print_root:
             chord_name = "{}{}".format(
-                midi_name[root], names[chords[chord_id]])
+                midi_names[root], names[self.chords[chord_id]])
         else:
             chord_name = "{1}/{0}".format(
-                midi_name[root], names[chords[chord_id]])
+                midi_names[root], names[self.chords[chord_id]])
 
         return(chord_id, root, chord_name)
 
     def main(self):
+        """
+        Call this function for sound training without visual information.
+        """
         duration = 3
 
-        chord, root, chord_name = self.select_chord()
         for i in range(20):
-            self.chord_on(chords[chord], root=root)
+            chord, root, chord_name = self.select_chord()
+            print(chord_name)
+            self.chord_on(self.chords[chord], root=root)
             time.sleep(duration)
-            self.chord_off(chords[chord], root=root)
+            self.chord_off(self.chords[chord], root=root)
 
         self.midiout.close()
         m.quit()
-
-
-class lightLabel(Label):
-    def __init__(self, *args, **kws):
-        Label.__init__(self, *args, **kws)
 
 
 class ChordWidget(Widget):
@@ -156,51 +166,67 @@ class ChordWidget(Widget):
     def __init__(self, *args, **kwargs):
         Widget.__init__(self, *args, **kwargs)
 
-        print_root = False if len(chords[0]) == 2 else True
-        self.play_chords = playChords(print_root=print_root)
+        self.chords = chords  # Todo: chords should be given by an arg or menu
+        print_root = False if len(self.chords[0]) == 2 else True
+        self.play_chords = playChords(chords=chords, print_root=print_root)
 
-        self.duration = 3  # duration of each chord
+        self.duration = 3.5  # duration of each chord
         self.t = 0  # time from new chord appearance
         self.dt = 0.01  # dt of animation update
-        n_step = self.duration/self.dt
+        n_step = self.duration/self.dt  # total time step per chord
 
         # object size parameters
         self.init_l = 0  # positional range of circles
         self.init_r = 0  # circle radius
         self.init_fontsize = 60  # text size
         self.init_alpha = 0  # circle transparancy
-
-        lmax=500
-        rmax=80
-        self.dl = lmax/n_step
-        self.dr = rmax/n_step
-        #self.dfontsize = 70/n_step
-        self.dfontsize = 0
-        self.dalpha = 1.2/n_step
+        self.lmax = 500
+        self.rmax = 80
 
         self.l = self.init_l
         self.r = self.init_r
         self.fontsize = self.init_fontsize
         self.alpha = self.init_alpha
 
-        Window.size = (500, 500)
-        self.center = [50, 50] # Widget内の位置は%で指定
+        self.dl = self.lmax/n_step
+        self.dr = self.rmax/n_step
+        #self.dfontsize = 70/n_step
+        self.dfontsize = 0
+        self.dalpha = 1.2/n_step
 
-        self.evn = Clock.schedule_interval(self.update, self.dt)
+        Window.size = (500, 500)
+        self.center = (50, 50)  # Widget内の位置は%で指定
+
+        #self.MyClock = Clock
+        #self.evnt = self.MyClock.schedule_interval(self.update, self.dt)
+        self.event = Clock.schedule_interval(self.update, self.dt)
+        self.flag_event = True
+
+    def on_touch_down(self, position):
+
+        if self.flag_event == True:
+            Clock.unschedule(self.event)
+            self.play_chords.chord_on(
+                self.chords[self.chord_id], root=self.root)
+            self.flag_event = False
+        else:
+            self.event = Clock.schedule_interval(self.update, self.dt)
+            self.flag_event = True
+        return True
 
     def update_circle(self, chord_id, chord_name):
         #self.ellipse_size = [self.r*2, self.r*2]
         #self.ellipse_pos = self.center-self.r
         rgb = plt.cm.Accent(chord_id)  # get rgb of Pastel1
 
-        chord_vec = np.array(chords[chord_id], dtype=np.float64)
+        chord_vec = np.array(self.chords[chord_id], dtype=np.float64)
         chord_vec -= np.mean(chord_vec)
         chord_vec /= 6  # normalized to [-1,1]
 
         pos = np.empty((len(chord_vec), 2))
         for i in range(len(chord_vec)):
-            pos[i] = [self.center[0], 
-                self.l*chord_vec[i] + self.center[1]] - np.array([self.r/2, self.r/2])
+            pos[i] = [self.center[0],
+                      self.l*chord_vec[i] + self.center[1]] - np.array([self.r/2, self.r/2])
 
         label_width = 100
         self.canvas.clear()
@@ -210,14 +236,15 @@ class ChordWidget(Widget):
             for i in range(len(chord_vec)):
                 Ellipse(pos=pos[i], size=(self.r, self.r))
 
-            #L=np.array([pos[-1][1],pos[-1][1]])-self.center
+            # L=np.array([pos[-1][1],pos[-1 ala][1]])-self.center
             #Ellipse(pos=self.center-L[0], size=L*2, fill=None)
 
-            Label(pos=[self.center[0]-label_width/2, 22], 
-                text=chord_name, font_size=str(int(self.fontsize)), 
-                markup=True, halign="center", size_hint_x=None, width= label_width, 
-                color=[1, 1, 1, self.alpha]
-                )
+            Label(pos=[self.center[0]-label_width/2, 25],
+                  text=chord_name,
+                  font_size=str(int(self.fontsize)),
+                  markup=True, halign="center", size_hint_x=None, width=label_width,
+                  color=[1, 1, 1, self.alpha]
+                  )
 
         self.r += self.dr
         self.l += self.dl
@@ -225,10 +252,10 @@ class ChordWidget(Widget):
         self.alpha += self.dalpha
 
     def update(self, dt):
-
         if self.t == 0:
             self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
-            self.play_chords.chord_on(chords[self.chord_id], root=self.root)
+            self.play_chords.chord_on(
+                self.chords[self.chord_id], root=self.root)
             self.l = self.init_l
             self.r = self.init_r
             self.fontsize = self.init_fontsize
@@ -236,15 +263,15 @@ class ChordWidget(Widget):
 
         # https://matplotlib.org/stable/tutorials/colors/colormaps.html
         #   self.rgb = plt.cm.Pastel1(self.chord) # get rgb of Pastel1
-
         self.update_circle(self.chord_id, self.chord_name)
 
         self.t += dt
-        if(self.t > self.duration):
+        if self.t > self.duration:
             self.t = 0
 
         if self.t == 0:
-            self.play_chords.chord_off(chords[self.chord_id], root=self.root)
+            self.play_chords.chord_off(
+                self.chords[self.chord_id], root=self.root)
 
 
 class ChordApp(App):
@@ -252,10 +279,12 @@ class ChordApp(App):
         return ChordWidget()
 
 
-ChordApp().run()
+if __name__ == '__main__':
+    # Run below if you want Visual info
+    ChordApp().run()
 
-# play_chords=playChords()
-# play_chords.main()
+    # If you don't need visual info, run below.
+    # play_chords=playChords(chords=chords)
+    # play_chords.main()
 
-
-exit()
+    exit()
