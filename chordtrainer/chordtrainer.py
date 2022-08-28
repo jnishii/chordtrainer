@@ -77,22 +77,28 @@ names4 = {
 names = names2 | names3 | names4
 
 notes2 = [m2, mj2, m3, mj3, p4, tritone, p5, m6, mj6, m7, mj7]
-notes27 = [m7, mj7, m3, p5, p4]
+notes22 = [m2, mj2]
+notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
 notes4 = [mj7th, d7th]
 
-chords = [major, minor]
 chords = notes27
 chords = [d7th, mj7th]
 #chords = notes4 + [aug, dim, m7, mj7]
-#chords = notes3
+#chords = notes22
+#chords = [major, minor]
+#chords =notes2
+
 
 
 class playChords():
-    def __init__(self, chords, print_root=True, note_range=[48, 81]) -> None:
+    def __init__(self, chords, print_root=True, note_range=[48, 81], arpeggio=False, delay=0.01) -> None:
 
         self.chords = chords
         self.print_root = print_root
+        self.arpeggio = False
+        self.delay = delay  # delay between notes for arpeggio
+
         # 110Hz: 45 (MIDI note)
         # 220Hz: 57
         # 440Hz: 69
@@ -111,11 +117,13 @@ class playChords():
         for i in range(n_midi):
             print(m.get_device_info(i))  # MIDIデバイスの情報を表示
 
-    def chord_on(self, chord, root=0, vel=60):
+    def chord_on(self, chord, root=0, vel=60, force_arpeggio=None):
         for n in chord:
             vel_n = vel
+            if (force_arpeggio==None and self.arpeggio) or (force_arpeggio or self.arpeggio):
+                time.sleep(self.delay)
             if n == chord[0]:
-                vel_n += 30
+                vel_n += 35
             if n == chord[-1]:
                 vel_n += 20
             vel_n += rnd.randint(-15, 15)
@@ -171,9 +179,10 @@ class ChordWidget(Widget):
 
         self.chords = chords  # Todo: chords should be given by an arg or menu
         print_root = False if len(self.chords[0]) == 2 else True
-        self.play_chords = playChords(chords=chords, print_root=print_root)
+        self.play_chords = playChords(
+            chords=chords, print_root=print_root, delay=0.1)
 
-        self.duration = 3.5  # duration of each chord
+        self.duration = 4  # duration of each chord
         self.t = 0  # time from new chord appearance
         self.dt = 0.01  # dt of animation update
         n_step = self.duration/self.dt  # total time step per chord
@@ -205,11 +214,9 @@ class ChordWidget(Widget):
         self.event = Clock.schedule_interval(self.update, self.dt)
         self.flag_event = True
 
-    def toggle_schedule(self):
+    def pause_schedule(self):
         if self.flag_event == True:
             Clock.unschedule(self.event)
-            self.play_chords.chord_on(
-                self.chords[self.chord_id], root=self.root)
             self.flag_event = False
         else:
             self.event = Clock.schedule_interval(self.update, self.dt)
@@ -222,15 +229,33 @@ class ChordWidget(Widget):
 
     def on_keyboard_down(self, keyboard, keycode, text, modifiers):
         print("keycode:", keyboard, keycode, text, modifiers)
-        if keycode[1] == 'spacebar':
-            self.toggle_schedule()
-        else:
-            self.play_chords.chord_on(
-                self.chords[self.chord_id], root=self.root)
+        match keycode[1]:
+            case 'spacebar':
+                self.pause_schedule()
+                return True
+            case 'a':
+                self.play_chords.chord_on(
+                    self.chords[self.chord_id], root=self.root, force_arpeggio=True)
+            case 'h':
+                self.play_chords.chord_on(
+                    self.chords[self.chord_id], root=self.root, force_arpeggio=False)
+            case 't':
+                self.play_chords.arpeggio = not self.play_chords.arpeggio
+            case 'up':
+                self.play_chords.delay += 0.01
+                print(self.play_chords.delay)
+            case 'down' | '-':
+                self.play_chords.delay -= 0.01
+                if self.play_chords.delay < 0:
+                    self.play_chords.delay = 0
+                print(self.play_chords.delay)
+            case _:
+                self.play_chords.chord_on(
+                    self.chords[self.chord_id], root=self.root)
         return True
 
     def on_touch_down(self, position):
-        self.toggle_schedule()
+        self.pause_schedule()
 
         return True
 

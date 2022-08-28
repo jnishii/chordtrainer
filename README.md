@@ -13,4 +13,11 @@ $ poetry install
 
 ## 準備: MIDIの音を鳴らす(Mac)
 
-- [pythonからMIDI用の信号を作成し、音を再生する](https://kagari.github.io/note/2020/macos_pygame_midi/)
+1. パソコンのMIDI出力設定をする
+    - [pythonからMIDI用の信号を作成し、音を再生する](https://kagari.github.io/note/2020/macos_pygame_midi/)
+    - [MacでのAudio MIDI設定（結構重要です）](https://hideshigelog.com/audio-midi)
+2. [poetry](https://python-poetry.org/docs/)をインストールしてから，以下を実行
+    ```
+    $ poetry install
+    ```
+    Python環境にpoetryを使わない場合は，python(3.10以上)に`pyproject.toml`にあるライブラリをインストールした環境を作っておく。

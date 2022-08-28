@@ -1,7 +1,10 @@
-canvas:
-    Label:
-        text_size: self.size
-        text: "hello"
-        halign: 'center'
-        valign: 'middle'
-        markup: True
+#:kivy 2.1.0
+
+<ChordWidget>:
+    canvas:
+        Label:
+            text_size: self.size
+            text: "hello"
+            halign: 'center'
+            valign: 'middle'
+            markup: True
