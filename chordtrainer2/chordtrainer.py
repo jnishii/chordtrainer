@@ -88,8 +88,6 @@ chords = notes27
 #chords = [major, minor]
 #chords =notes2
 
-
-
 class playChords():
     def __init__(self, chords, print_root=True, note_range=[48, 81], arpeggio=False, delay=0.01) -> None:
 
@@ -171,9 +169,11 @@ class playChords():
         self.midiout.close()
         m.quit()
 
+class LabelWidget(Widget):
+    pass
 
 class ChordWidget(Widget):
-    evn = None
+    test_label=ObjectProperty(None)
 
     def __init__(self, *args, **kwargs):
         Widget.__init__(self, *args, **kwargs)
@@ -212,10 +212,8 @@ class ChordWidget(Widget):
         Window.size = (500, 500)
         self.center = (50, 50)  # Widget内の位置は%で指定
 
-        #self.MyClock = Clock
-        #self.evnt = self.MyClock.schedule_interval(self.update, self.dt)
-        self.event = Clock.schedule_interval(self.update, self.dt)
         self.flag_event = True
+        print("init done")
 
     def pause_schedule(self):
         if self.flag_event == True:
@@ -287,12 +285,12 @@ class ChordWidget(Widget):
             # L=np.array([pos[-1][1],pos[-1 ala][1]])-self.center
             #Ellipse(pos=self.center-L[0], size=L*2, fill=None)
 
-            Label(pos=[self.center[0]-label_width/2, 25],
-                  text=chord_name,
-                  font_size=str(int(self.fontsize)),
-                  markup=True, halign="center", size_hint_x=None, width=label_width,
-                  color=[1, 1, 1, self.alpha]
-                  )
+            # Label(pos=[self.center[0]-label_width/2, 25],
+            #       text=chord_name,
+            #       font_size=str(int(self.fontsize)),
+            #       markup=True, halign="center", size_hint_x=None, width=label_width,
+            #       color=[1, 1, 1, self.alpha]
+            #       )
 
         self.r += self.dr
         self.l += self.dl
@@ -324,7 +322,9 @@ class ChordWidget(Widget):
 
 class ChordApp(App):
     def build(self):
-        return ChordWidget()
+        chord=ChordWidget()
+        Clock.schedule_interval(chord.update, chord.dt)
+        return chord
 
 
 if __name__ == '__main__':

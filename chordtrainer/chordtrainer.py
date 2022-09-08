@@ -88,6 +88,8 @@ chords = notes27
 #chords = [major, minor]
 #chords =notes2
 
+
+
 class playChords():
     def __init__(self, chords, print_root=True, note_range=[48, 81], arpeggio=False, delay=0.01) -> None:
 
@@ -171,6 +173,8 @@ class playChords():
 
 
 class ChordWidget(Widget):
+    evn = None
+
     def __init__(self, *args, **kwargs):
         Widget.__init__(self, *args, **kwargs)
         self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
@@ -208,8 +212,10 @@ class ChordWidget(Widget):
         Window.size = (500, 500)
         self.center = (50, 50)  # Widget内の位置は%で指定
 
+        #self.MyClock = Clock
+        #self.evnt = self.MyClock.schedule_interval(self.update, self.dt)
+        self.event = Clock.schedule_interval(self.update, self.dt)
         self.flag_event = True
-        print("init done")
 
     def pause_schedule(self):
         if self.flag_event == True:
@@ -318,9 +324,7 @@ class ChordWidget(Widget):
 
 class ChordApp(App):
     def build(self):
-        chord=ChordWidget()
-        Clock.schedule_interval(chord.update, chord.dt)
-        return chord
+        return ChordWidget()
 
 
 if __name__ == '__main__':
