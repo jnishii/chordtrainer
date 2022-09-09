@@ -1,5 +1,5 @@
 from kivy.properties import (
-    NumericProperty, ReferenceListProperty, ObjectProperty
+    NumericProperty, StringProperty, ObjectProperty
 )
 from kivy.animation import Animation
 from kivy.core.window import Window
@@ -22,7 +22,7 @@ midi_notes = range(132)
 note_names = ["C", "C#", "D", "D#", "E",
               "F", "F#", "G", "G#", "A", "A#", "B"]*11
 midi_names = dict(zip(midi_notes, note_names))
-print(midi_names[10]) 
+print(midi_names[10])
 
 # 2 notes
 m2 = (0, 1)
@@ -88,6 +88,8 @@ chords = notes27
 #chords = [major, minor]
 #chords =notes2
 
+Window.size = (500, 500)
+
 class playChords():
     def __init__(self, chords, print_root=True, note_range=[48, 81], arpeggio=False, delay=0.01) -> None:
 
@@ -117,7 +119,7 @@ class playChords():
     def chord_on(self, chord, root=0, vel=60, force_arpeggio=None):
         for n in chord:
             vel_n = vel
-            if (force_arpeggio==None and self.arpeggio) or (force_arpeggio or self.arpeggio):
+            if (force_arpeggio == None and self.arpeggio) or (force_arpeggio or self.arpeggio):
                 time.sleep(self.delay)
             if n == chord[0]:
                 vel_n += 35
@@ -151,7 +153,7 @@ class playChords():
 
     def close(self):
         self.midiout.close()
-        m.quit()        
+        m.quit()
 
     def main(self):
         """
@@ -169,11 +171,31 @@ class playChords():
         self.midiout.close()
         m.quit()
 
+
 class LabelWidget(Widget):
-    pass
+    alpha = NumericProperty(1)
+    fontsize = NumericProperty(60)
+    chordname = StringProperty("Start!")
+
+    def initialize(self, n_step):
+        self.init_fontsize = 60  # text size
+        self.init_alpha = 0  # transparancy
+        self.dfontsize = 0
+        self.dalpha = 1.2/n_step
+
+        self.reset()
+
+    def reset(self, chordname=""):
+        #self.fontsize = self.init_fontsize
+        self.alpha = self.init_alpha
+        self.chordname = chordname
+
+    def update(self):
+        #self.fontsize += self.dfontsize
+        self.alpha += self.dalpha
 
 class ChordWidget(Widget):
-    test_label=ObjectProperty(None)
+    chord_label = ObjectProperty(None)
 
     def __init__(self, *args, **kwargs):
         Widget.__init__(self, *args, **kwargs)
@@ -190,31 +212,28 @@ class ChordWidget(Widget):
         self.dt = 0.01  # dt of animation update
         n_step = self.duration/self.dt  # total time step per chord
 
+        self.chord_label.initialize(n_step)
+
         # object size parameters
         self.init_l = 0  # positional range of circles
         self.init_r = 0  # circle radius
-        self.init_fontsize = 60  # text size
-        self.init_alpha = 0  # circle transparancy
         self.lmax = 500
         self.rmax = 80
 
-        self.l = self.init_l
-        self.r = self.init_r
-        self.fontsize = self.init_fontsize
-        self.alpha = self.init_alpha
+        self.reset_canvas()
 
         self.dl = self.lmax/n_step
         self.dr = self.rmax/n_step
-        #self.dfontsize = 70/n_step
-        self.dfontsize = 0
-        self.dalpha = 1.2/n_step
 
-        Window.size = (500, 500)
-        self.center = (50, 50)  # Widget内の位置は%で指定
-
+        self.event=Clock.schedule_interval(self.update, self.dt)
+        
         self.flag_event = True
-        print("init done")
+        print("initialize done!")
 
+    def reset_canvas(self):
+        self.l = self.init_l
+        self.r = self.init_r      
+            
     def pause_schedule(self):
         if self.flag_event == True:
             Clock.unschedule(self.event)
@@ -260,56 +279,41 @@ class ChordWidget(Widget):
 
         return True
 
-    def update_circle(self, chord_id, chord_name):
-        #self.ellipse_size = [self.r*2, self.r*2]
-        #self.ellipse_pos = self.center-self.r
+    def update_canvas(self, chord_id):
         rgb = plt.cm.Accent(chord_id)  # get rgb of Pastel1
 
         chord_vec = np.array(self.chords[chord_id], dtype=np.float64)
         chord_vec -= np.mean(chord_vec)
         chord_vec /= 6  # normalized to [-1,1]
 
+        self.center = (50, 50)  # Widget内の位置は%で指定
         pos = np.empty((len(chord_vec), 2))
         for i in range(len(chord_vec)):
             pos[i] = [self.center[0],
                       self.l*chord_vec[i] + self.center[1]] - np.array([self.r/2, self.r/2])
 
-        label_width = 100
-        self.canvas.clear()
-        with self.canvas:
+        # if you canvas.clear below, Label disappears!
+        self.canvas.before.clear()
+        with self.canvas.before:
             Color(rgb=rgb)
-            #Ellipse(pos=self.ellipse_pos, size=self.ellipse_size)
             for i in range(len(chord_vec)):
                 Ellipse(pos=pos[i], size=(self.r, self.r))
 
-            # L=np.array([pos[-1][1],pos[-1 ala][1]])-self.center
-            #Ellipse(pos=self.center-L[0], size=L*2, fill=None)
-
-            # Label(pos=[self.center[0]-label_width/2, 25],
-            #       text=chord_name,
-            #       font_size=str(int(self.fontsize)),
-            #       markup=True, halign="center", size_hint_x=None, width=label_width,
-            #       color=[1, 1, 1, self.alpha]
-            #       )
-
         self.r += self.dr
         self.l += self.dl
-        self.fontsize += self.dfontsize
-        self.alpha += self.dalpha
 
     def update(self, dt):
         if self.t == 0:
             self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
             self.play_chords.chord_on(
                 self.chords[self.chord_id], root=self.root)
-            self.l = self.init_l
-            self.r = self.init_r
-            self.fontsize = self.init_fontsize
-            self.alpha = self.init_alpha
+            self.reset_canvas()
+            self.chord_label.reset(chordname=self.chord_name)
 
         # https://matplotlib.org/stable/tutorials/colors/colormaps.html
         #   self.rgb = plt.cm.Pastel1(self.chord) # get rgb of Pastel1
-        self.update_circle(self.chord_id, self.chord_name)
+        self.update_canvas(self.chord_id)
+        self.chord_label.update()
 
         self.t += dt
         if self.t > self.duration:
@@ -322,8 +326,8 @@ class ChordWidget(Widget):
 
 class ChordApp(App):
     def build(self):
-        chord=ChordWidget()
-        Clock.schedule_interval(chord.update, chord.dt)
+        chord = ChordWidget()
+        #Clock.schedule_interval(chord.update, chord.dt)
         return chord
 
 

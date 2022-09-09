@@ -1,0 +1,36 @@
+#:kivy 2.1.0
+
+<LabelWidget>:
+    size: 100, 20
+    Label:
+        color: 1, 1, 1, root.alpha
+        font_size: root.fontsize
+        text: root.chordname
+        halign: 'center'
+        valign: 'middle'
+        markup: True
+        #size: self.size
+        center_x: 500
+        y: 50
+        
+
+<ChordWidget>:
+    chord_label: name_label
+
+    LabelWidget:
+        id: name_label
+        x: root.width - self.width
+        #center_x: root.width * 3 / 4
+        #center: self.parent.center
+        center_y: root.center_y
+    
+    # Label:
+    #     color: 1, 1, 1, 1#root.alpha
+    #     font_size: 50#root.fontsize
+    #     text: "testing"
+    #     halign: 'center'
+    #     valign: 'middle'
+    #     markup: True
+    #     #size: self.size
+    #     center_x: 500
+    #     y: 450
