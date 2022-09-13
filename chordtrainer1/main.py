@@ -81,7 +81,7 @@ notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
 notes4 = [mj7th, d7th]
 
-chords = notes27
+chords = notes4
 #chords = [d7th, mj7th]
 #chords = notes4 + [aug, dim, m7, mj7]
 #chords = notes22
@@ -122,7 +122,7 @@ class playChords():
             if (force_arpeggio == None and self.arpeggio) or (force_arpeggio or self.arpeggio):
                 time.sleep(self.delay)
             if n == chord[0]:
-                vel_n += 35
+                vel_n = vel_n+35 if chord[-1]-chord[0]<12 else vel_n + 10
             if n == chord[-1]:
                 vel_n += 20
             vel_n += rnd.randint(-15, 15)
@@ -161,12 +161,20 @@ class playChords():
         """
         duration = 3
 
+        Transpose=True
         for i in range(20):
             chord, root, chord_name = self.select_chord()
             print(chord_name)
-            self.chord_on(self.chords[chord], root=root)
+            notes=self.chords[chord]
+            print(len(notes))
+            if len(notes)==4 and Transpose==True:
+                if rnd.randint(0,2)==0:
+                    notes=[notes[0]-24, notes[3]-12, notes[1], notes[2]]
+                    print("transposed")
+
+            self.chord_on(notes, root=root)
             time.sleep(duration)
-            self.chord_off(self.chords[chord], root=root)
+            self.chord_off(notes, root=root)
 
         self.midiout.close()
         m.quit()
@@ -207,7 +215,7 @@ class ChordWidget(Widget):
         self.play_chords = playChords(
             chords=chords, print_root=print_root, delay=0.1)
 
-        self.duration = 4  # duration of each chord
+        self.duration = 5  # duration of each chord
         self.t = 0  # time from new chord appearance
         self.dt = 0.01  # dt of animation update
         n_step = self.duration/self.dt  # total time step per chord
@@ -249,29 +257,29 @@ class ChordWidget(Widget):
 
     def on_keyboard_down(self, keyboard, keycode, text, modifiers):
         print("keycode:", keyboard, keycode, text, modifiers)
-        # match keycode[1]:
-        #     case 'spacebar':
-        #         self.pause_schedule()
-        #         return True
-        #     case 'a':
-        #         self.play_chords.chord_on(
-        #             self.chords[self.chord_id], root=self.root, force_arpeggio=True)
-        #     case 'h':
-        #         self.play_chords.chord_on(
-        #             self.chords[self.chord_id], root=self.root, force_arpeggio=False)
-        #     case 't':
-        #         self.play_chords.arpeggio = not self.play_chords.arpeggio
-        #     case 'up':
-        #         self.play_chords.delay += 0.01
-        #         print(self.play_chords.delay)
-        #     case 'down' | '-':
-        #         self.play_chords.delay -= 0.01
-        #         if self.play_chords.delay < 0:
-        #             self.play_chords.delay = 0
-        #         print(self.play_chords.delay)
-        #     case _:
-        #         self.play_chords.chord_on(
-        #             self.chords[self.chord_id], root=self.root)
+        match keycode[1]:
+            case 'spacebar':
+                self.pause_schedule()
+                return True
+            case 'a':
+                self.play_chords.chord_on(
+                    self.chords[self.chord_id], root=self.root, force_arpeggio=True)
+            case 'h':
+                self.play_chords.chord_on(
+                    self.chords[self.chord_id], root=self.root, force_arpeggio=False)
+            case 't':
+                self.play_chords.arpeggio = not self.play_chords.arpeggio
+            case 'up':
+                self.play_chords.delay += 0.01
+                print(self.play_chords.delay)
+            case 'down' | '-':
+                self.play_chords.delay -= 0.01
+                if self.play_chords.delay < 0:
+                    self.play_chords.delay = 0
+                print(self.play_chords.delay)
+            case _:
+                self.play_chords.chord_on(
+                    self.chords[self.chord_id], root=self.root)
         return True
 
     def on_touch_down(self, position):
@@ -305,11 +313,21 @@ class ChordWidget(Widget):
         self.r += self.dr
         self.l += self.dl
 
+    def transpose7th(self, notes):
+        return notes[0]-24,  notes[3]-12, notes[1], notes[2]        
+
     def update(self, dt):
+        Transpose=True
+
         if self.t == 0:
             self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
-            self.play_chords.chord_on(
-                self.chords[self.chord_id], root=self.root)
+
+            self.notes=self.chords[self.chord_id]
+            if len(self.notes)==4 and Transpose==True:
+                if rnd.randint(0,2)==0:
+                    self.notes = self.transpose7th(self.notes)
+
+            self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
             self.chord_label.reset(chordname=self.chord_name)
 
@@ -322,7 +340,7 @@ class ChordWidget(Widget):
 
         if self.t == 0:
             self.play_chords.chord_off(
-                self.chords[self.chord_id], root=self.root)
+                 self.notes, root=self.root)
 
 
 class ChordApp(App):
