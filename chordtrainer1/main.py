@@ -82,6 +82,7 @@ notes3 = [major, minor, aug, dim, sus4]
 notes4 = [mj7th, d7th]
 
 chords = notes4
+chords = [mj7th]
 #chords = [d7th, mj7th]
 #chords = notes4 + [aug, dim, m7, mj7]
 #chords = notes22
@@ -91,7 +92,7 @@ chords = notes4
 Window.size = (500, 500)
 
 class playChords():
-    def __init__(self, chords, print_root=True, note_range=[48, 81], arpeggio=False, delay=0.01) -> None:
+    def __init__(self, chords, print_root=True, note_range=[57, 81], arpeggio=False, delay=0.01) -> None:
 
         self.chords = chords
         self.print_root = print_root
@@ -100,7 +101,7 @@ class playChords():
 
         # 110Hz: 45 (MIDI note)
         # 220Hz: 57
-        # 440Hz: 69
+         # 440Hz: 69
         # 880Hz: 81
         self.note_range = note_range  # range of root note
 
@@ -162,13 +163,14 @@ class playChords():
         duration = 3
 
         Transpose=True
+        Random=False
         for i in range(20):
             chord, root, chord_name = self.select_chord()
             print(chord_name)
             notes=self.chords[chord]
             print(len(notes))
-            if len(notes)==4 and Transpose==True:
-                if rnd.randint(0,2)==0:
+            if len(notes)==4 and Transpose:
+                if (Random and rnd.randint(0,2)==0) or not Random:
                     notes=[notes[0]-24, notes[3]-12, notes[1], notes[2]]
                     print("transposed")
 
@@ -263,10 +265,14 @@ class ChordWidget(Widget):
                 return True
             case 'a':
                 self.play_chords.chord_on(
-                    self.chords[self.chord_id], root=self.root, force_arpeggio=True)
+                    self.notes, root=self.root, force_arpeggio=True)
             case 'h':
                 self.play_chords.chord_on(
-                    self.chords[self.chord_id], root=self.root, force_arpeggio=False)
+                    self.notes, root=self.root, force_arpeggio=False)
+            case 'q' | 'escape':
+                self.play_chords.chord_off(self.notes, root=self.root)
+                self.play_chords.midiout.close()
+                quit()
             case 't':
                 self.play_chords.arpeggio = not self.play_chords.arpeggio
             case 'up':
@@ -287,13 +293,13 @@ class ChordWidget(Widget):
 
         return True
 
-    def update_canvas(self, chord_id):
+    def update_canvas(self, notes, chord_id):
         # https://matplotlib.org/stable/tutorials/colors/colormaps.html
         #   self.rgb = plt.cm.Pastel1(self.chord) # get rgb of Pastel1        
         rgb = plt.cm.Accent(chord_id)  # get rgb of Accent
         #print(rgb)
 
-        chord_vec = np.array(self.chords[chord_id], dtype=np.float64)
+        chord_vec = np.array(notes, dtype=np.float64)
         chord_vec -= np.mean(chord_vec)
         chord_vec /= 6  # normalized to [-1,1]
 
@@ -318,27 +324,25 @@ class ChordWidget(Widget):
 
     def update(self, dt):
         Transpose=True
-
+        Random=False
         if self.t == 0:
             self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
 
             self.notes=self.chords[self.chord_id]
             if len(self.notes)==4 and Transpose==True:
-                if rnd.randint(0,2)==0:
+                if (Random and rnd.randint(0,2)==0) or not Random:
                     self.notes = self.transpose7th(self.notes)
 
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
             self.chord_label.reset(chordname=self.chord_name)
 
-        self.update_canvas(self.chord_id)
+        self.update_canvas(self.notes, self.chord_id)
         self.chord_label.update()
 
         self.t += dt
         if self.t > self.duration:
             self.t = 0
-
-        if self.t == 0:
             self.play_chords.chord_off(
                  self.notes, root=self.root)
 
