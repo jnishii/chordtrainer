@@ -77,13 +77,14 @@ names = names2 | names3 | names4
 
 notes2 = [m2, mj2, m3, mj3, p4, tritone, p5, m6, mj6, m7, mj7]
 notes22 = [m2, mj2]
+notes26 = [m6,mj6]
 notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
 notes4 = [mj7th, d7th,m7th]
 
 #chords = notes4
 chords = [mj7th]
-#chords = [d7th]
+chords = [d7th]
 #chords = [m7th]
 
 
@@ -92,6 +93,8 @@ chords = [mj7th]
 #chords = notes22
 #chords = [major, minor]
 #chords =notes2
+#chords=notes26 + notes27
+chord = [mj7]
 
 Window.size = (500, 500)
 
@@ -111,7 +114,7 @@ class playChords():
 
         m.init()            # MIDIデバイスを初期化
         self.get_midi_devices()
-        device_id = 3
+        device_id = 2
         print("device_id:", device_id)
         self.midiout = m.Output(device_id)
 
@@ -222,7 +225,7 @@ class ChordWidget(Widget):
         self.play_chords = playChords(
             chords=chords, print_root=print_root, delay=0.1)
 
-        self.duration = 4  # duration of each chord
+        self.duration = 6  # duration of each chord
         self.t = 0  # time from new chord appearance
         self.dt = 0.01  # dt of animation update
         n_step = self.duration/self.dt  # total time step per chord
@@ -289,8 +292,7 @@ class ChordWidget(Widget):
                     self.play_chords.delay = 0
                 print(self.play_chords.delay)
             case _:
-                self.play_chords.chord_on(
-                    self.chords[self.chord_id], root=self.root)
+                self.play_chords.chord_on(self.notes, root=self.root)
         return True
 
     def on_touch_down(self, position):
