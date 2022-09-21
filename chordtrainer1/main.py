@@ -79,10 +79,14 @@ notes2 = [m2, mj2, m3, mj3, p4, tritone, p5, m6, mj6, m7, mj7]
 notes22 = [m2, mj2]
 notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
-notes4 = [mj7th, d7th]
+notes4 = [mj7th, d7th,m7th]
 
-chords = notes4
+#chords = notes4
 chords = [mj7th]
+#chords = [d7th]
+#chords = [m7th]
+
+
 #chords = [d7th, mj7th]
 #chords = notes4 + [aug, dim, m7, mj7]
 #chords = notes22
@@ -92,7 +96,7 @@ chords = [mj7th]
 Window.size = (500, 500)
 
 class playChords():
-    def __init__(self, chords, print_root=True, note_range=[57, 81], arpeggio=False, delay=0.01) -> None:
+    def __init__(self, chords, print_root=True, note_range=[48, 77], arpeggio=False, delay=0.01) -> None:
 
         self.chords = chords
         self.print_root = print_root
@@ -107,7 +111,7 @@ class playChords():
 
         m.init()            # MIDIデバイスを初期化
         self.get_midi_devices()
-        device_id = 2
+        device_id = 3
         print("device_id:", device_id)
         self.midiout = m.Output(device_id)
 
@@ -115,17 +119,18 @@ class playChords():
         n_midi = m.get_count()  # MIDIデバイスの数
         print("# of devices: ", n_midi)
         for i in range(n_midi):
-            print(m.get_device_info(i))  # MIDIデバイスの情報を表示
+            print("{}: {}".format(i,m.get_device_info(i)))  # MIDIデバイスの情報を表示
 
     def chord_on(self, chord, root=0, vel=60, force_arpeggio=None):
         for n in chord:
             vel_n = vel
             if (force_arpeggio == None and self.arpeggio) or (force_arpeggio or self.arpeggio):
                 time.sleep(self.delay)
+                
             if n == chord[0]:
                 vel_n = vel_n+35 if chord[-1]-chord[0]<12 else vel_n + 10
             if n == chord[-1]:
-                vel_n += 20
+                vel_n += 25
             vel_n += rnd.randint(-15, 15)
 
             if vel_n > 127:
@@ -163,7 +168,7 @@ class playChords():
         duration = 3
 
         Transpose=True
-        Random=False
+        Random=True
         for i in range(20):
             chord, root, chord_name = self.select_chord()
             print(chord_name)
@@ -217,7 +222,7 @@ class ChordWidget(Widget):
         self.play_chords = playChords(
             chords=chords, print_root=print_root, delay=0.1)
 
-        self.duration = 5  # duration of each chord
+        self.duration = 4  # duration of each chord
         self.t = 0  # time from new chord appearance
         self.dt = 0.01  # dt of animation update
         n_step = self.duration/self.dt  # total time step per chord
@@ -324,7 +329,7 @@ class ChordWidget(Widget):
 
     def update(self, dt):
         Transpose=True
-        Random=False
+        Random=True
         if self.t == 0:
             self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
 
