@@ -80,12 +80,12 @@ notes22 = [m2, mj2]
 notes26 = [m6,mj6]
 notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
-notes4 = [mj7th, d7th,m7th]
+notes4 = [mj7th, d7th, m7th]
 
 #chords = notes4
-chords = [mj7th]
-chords = [d7th]
-#chords = [m7th]
+#chords = [mj7th]
+#chords = [d7th]
+chords = [m7th]
 
 
 #chords = [d7th, mj7th]
@@ -94,7 +94,10 @@ chords = [d7th]
 #chords = [major, minor]
 #chords =notes2
 #chords=notes26 + notes27
-chord = [mj7]
+#chords = [mj7]
+
+Transpose=True
+Random=False
 
 Window.size = (500, 500)
 
@@ -114,7 +117,9 @@ class playChords():
 
         m.init()            # MIDIデバイスを初期化
         self.get_midi_devices()
-        device_id = 2
+        #device_id = 2
+        device_id =3
+
         print("device_id:", device_id)
         self.midiout = m.Output(device_id)
 
@@ -170,8 +175,6 @@ class playChords():
         """
         duration = 3
 
-        Transpose=True
-        Random=True
         for i in range(20):
             chord, root, chord_name = self.select_chord()
             print(chord_name)
@@ -330,8 +333,6 @@ class ChordWidget(Widget):
         return notes[0]-24,  notes[3]-12, notes[1], notes[2]        
 
     def update(self, dt):
-        Transpose=True
-        Random=True
         if self.t == 0:
             self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
 
