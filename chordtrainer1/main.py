@@ -10,6 +10,7 @@ from kivy.clock import Clock
 #from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
+import re
 import random as rnd
 import time
 import pygame.midi as m
@@ -87,14 +88,14 @@ notes22 = [m2, mj2]
 notes26 = [m6, mj6]
 notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
-notes4 = [major7th, d7th, minor7th]
+notes4 = [major7th, d7th, minor7th, m7b5]
 
 #chords = notes4
 # chords = [mj7th]
 # chords = [d7th]
 # chords = [dim7th]
-#chords = [m7b5]
-chords = [minor7th]
+chords = [m7b5]
+#chords = [minor7th]
 
 
 #chords = [d7th, mj7th]
@@ -155,6 +156,11 @@ class playChords():
     def chord_off(self, chord, root=0):
         for n in chord:
             self.midiout.note_off(root + n)
+
+    # def select_progression(self):
+    #     self.progression = rnd.randint(0, len(self.chords)-1)
+    #     if type(self.progression)==list:
+    #          self.progression=[self.progression]
 
     def select_chord(self):
         root = rnd.randint(self.note_range[0], self.note_range[1])
@@ -353,7 +359,7 @@ class ChordWidget(Widget):
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
             self.chord_label.reset(chordname=self.chord_name)
-            print(self.chord_name)
+            print(re.sub('\[[a-zA-Z0-9=/]*\]|\.','',self.chord_name))
 
         self.update_canvas(self.notes, self.chord_id)
         self.chord_label.update()
