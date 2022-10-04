@@ -10,6 +10,7 @@ from kivy.clock import Clock
 #from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
+import re
 import random as rnd
 import re
 import time
@@ -78,8 +79,6 @@ names4 = {
     dim7th: "[sub]dim7[/sub]"
 }
 
-#
-
 names = names2 | names3 | names4
 
 notes2 = [m2, mj2, m3, mj3, p4, tritone, p5, m6, mj6, m7, mj7]
@@ -95,7 +94,7 @@ chords = [mj7]
 # chords = [mj7th]
 # chords = [d7th]
 # chords = [dim7th]
-# chords = [m7b5]
+chords = [m7b5]
 #chords = [minor7th]
 
 #chords = [d7th, mj7th]
@@ -161,6 +160,11 @@ class playChords():
     def chord_off(self, chord, root=0):
         for n in chord:
             self.midiout.note_off(root + n)
+
+    # def select_progression(self):
+    #     self.progression = rnd.randint(0, len(self.chords)-1)
+    #     if type(self.progression)==list:
+    #          self.progression=[self.progression]
 
     def select_chord(self):
         root = rnd.randint(self.note_range[0], self.note_range[1])
@@ -355,8 +359,12 @@ class ChordWidget(Widget):
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
             self.chord_label.reset(chordname=self.chord_name)
+<<<<<<< HEAD:chordtrainer/main.py
             print(re.sub('\[[a-zA-Z0-9=\/]*\]|\.','',self.chord_name))
 
+=======
+            print(re.sub('\[[a-zA-Z0-9=/]*\]|\.','',self.chord_name))
+>>>>>>> 5eedaba18ef6710f127b78789327b04f335b5f53:chordtrainer1/main.py
 
         self.update_canvas(self.notes, self.chord_id)
         self.chord_label.update()
