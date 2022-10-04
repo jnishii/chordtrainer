@@ -89,7 +89,7 @@ notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
 notes4 = [major7th, dominant7th, minor7th]
 
-chords = [m7]
+chords = [mj7]
 
 #chords = notes4
 # chords = [mj7th]
