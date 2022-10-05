@@ -28,6 +28,12 @@ note_names = ["C", "C"+sharp, "D", "E"+flat, "E",
               "F", "F"+sharp, "G", "A"+flat, "A", "B"+flat, "B"]*11
 midi_names = dict(zip(midi_notes, note_names))
 
+# 110Hz: 45 (MIDI note)
+# 220Hz: 57
+# 440Hz: 69
+# 880Hz: 81
+NOTE_RANGE=[52, 77]
+
 # 2 notes
 m2 = (0, 1)
 mj2 = (0, 2)
@@ -66,12 +72,14 @@ names3 = {
     major: "", minor: "[sub]m[/sub]", aug: "[sup]-5[/sup]", dim: "[sub]dim[/sub]", sus4: "[sub]sus4[/sub]",
 }
 
+note3_basic = [major, minor, dim]
+
 # 4 notes
-major7th = (0, 4, 7, 11)
-dominant7th = (0, 4, 7, 10)
-minor7th = (0, 3, 7, 10)
-m7b5 = (0, 3, 6, 10)
-dim7th = (0, 3, 6, 9)
+major7th = (0, 4, 7, 11) # base + minor
+dominant7th = (0, 4, 7, 10) # base + dim
+minor7th = (0, 3, 7, 10) # base + major
+m7b5 = (0, 3, 6, 10) # base + minor
+dim7th = (0, 3, 6, 9) # base + dim
 names4 = {
     major7th: "[sub]M7[/sub]", dominant7th: "[sub]7[/sub]",  minor7th: "[sub]m7[/sub]",
     m7b5: "[sub]m7[/sub][size=0].[/size][sup]-5[/sup]", 
@@ -88,16 +96,12 @@ notes27 = [m7, mj7]
 notes3 = [major, minor, aug, dim, sus4]
 notes4 = [major7th, dominant7th, minor7th]
 
-chords = [mj7]
-
+#
+chords = note3_basic
 #chords = notes4
-# chords = [mj7th]
-# chords = [d7th]
-# chords = [dim7th]
-chords = [m7b5]
 #chords = [minor7th]
 
-#chords = [d7th, mj7th]
+#chords = [dominant7th, major7th]
 #chords = notes4 + [aug, dim, m7, mj7]
 #chords = notes22
 #chords = [major, minor]
@@ -111,17 +115,13 @@ Window.size = (500, 500)
 
 
 class playChords():
-    def __init__(self, chords, print_root=True, note_range=[48, 77], arpeggio=False, delay=0.01) -> None:
+    def __init__(self, chords, print_root=True, note_range=NOTE_RANGE, arpeggio=False, delay=0.01) -> None:
 
         self.chords = chords
         self.print_root = print_root
         self.arpeggio = False
         self.delay = delay  # delay between notes for arpeggio
 
-        # 110Hz: 45 (MIDI note)
-        # 220Hz: 57
-        # 440Hz: 69
-        # 880Hz: 81
         self.note_range = note_range  # range of root note
 
         m.init()            # MIDIデバイスを初期化
@@ -359,12 +359,7 @@ class ChordWidget(Widget):
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
             self.chord_label.reset(chordname=self.chord_name)
-<<<<<<< HEAD:chordtrainer/main.py
-            print(re.sub('\[[a-zA-Z0-9=\/]*\]|\.','',self.chord_name))
-
-=======
             print(re.sub('\[[a-zA-Z0-9=/]*\]|\.','',self.chord_name))
->>>>>>> 5eedaba18ef6710f127b78789327b04f335b5f53:chordtrainer1/main.py
 
         self.update_canvas(self.notes, self.chord_id)
         self.chord_label.update()
