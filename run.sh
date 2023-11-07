@@ -1,1 +1,2 @@
-poetry run python chordtrainer/main.py
+poetry run python -m chordtrainer
+

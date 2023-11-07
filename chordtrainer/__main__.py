@@ -1,3 +1,6 @@
+from .chords import *
+
+from matplotlib import pyplot as plt
 from kivy.properties import (
     NumericProperty, StringProperty, ObjectProperty
 )
@@ -7,97 +10,9 @@ from kivy.uix.label import Label
 from kivy.graphics import Color, Ellipse
 from kivy.app import App, Widget
 from kivy.clock import Clock
-#from matplotlib import cm
-import matplotlib.pyplot as plt
-import numpy as np
-import re
-import random as rnd
-import re
-import time
-import pygame.midi as m
-import warnings
-warnings.simplefilter('ignore')
 
-flat="[size=90][sup]\u266d[/sup][/size][size=0].[/size]"
-sharp="[size=90][sup]\u266f[/sup][/size][size=0].[/size]"
-
-
-midi_notes = range(132)
-# note_name=["C","C[sup]#[/sup]","D","D[sup]#[/sup]","E","F","F[sup]#[/sup]","G","G[sup]#[/sup]","A","A[sup]#[/sup]","B"]*11
-note_names = ["C", "C"+sharp, "D", "E"+flat, "E",
-              "F", "F"+sharp, "G", "A"+flat, "A", "B"+flat, "B"]*11
-midi_names = dict(zip(midi_notes, note_names))
-
-# 110Hz: 45 (MIDI note)
-# 220Hz: 57
-# 440Hz: 69
-# 880Hz: 81
-NOTE_RANGE=[52, 77]
-
-# 2 notes
-m2 = (0, 1)
-mj2 = (0, 2)
-m3 = (0, 3)
-mj3 = (0, 4)
-p4 = (0, 5)
-tritone = (0, 6)
-p5 = (0, 7)
-m6 = (0, 8)
-mj6 = (0, 9)
-m7 = (0, 10)
-mj7 = (0, 11)
-
-names2 = {
-    m2: "minor 2nd",
-    mj2: "major 2nd",
-    m3: "minor 3rd",
-    mj3: "major 3rd",
-    p4: "perfect 4th",
-    tritone: "tritone",
-    p5: "perfect 5th",
-    m6: "minor 6th",
-    mj6: "major 6th",
-    m7: "minor 7th",
-    mj7: "major 7th",
-}
-
-
-# 3 notes
-major = (0, 4, 7)
-minor = (0, 3, 7)
-aug = (0, 4, 8)
-dim = (0, 3, 6)
-sus4 = (0, 5, 7)
-names3 = {
-    major: "", minor: "[sub]m[/sub]", aug: "[sup]-5[/sup]", dim: "[sub]dim[/sub]", sus4: "[sub]sus4[/sub]",
-}
-
-note3_basic = [major, minor, dim]
-
-# 4 notes
-major7th = (0, 4, 7, 11) # base + minor
-dominant7th = (0, 4, 7, 10) # base + dim
-minor7th = (0, 3, 7, 10) # base + major
-m7b5 = (0, 3, 6, 10) # base + minor
-dim7th = (0, 3, 6, 9) # base + dim
-names4 = {
-    major7th: "[sub]M7[/sub]", dominant7th: "[sub]7[/sub]",  minor7th: "[sub]m7[/sub]",
-    m7b5: "[sub]m7[/sub][size=0].[/size][sup]-5[/sup]", 
-    #m7b5: "[sup][i]\u00D8[/i][/sup]",
-    dim7th: "[sub]dim7[/sub]"
-}
-
-names = names2 | names3 | names4
-
-notes2 = [m2, mj2, m3, mj3, p4, tritone, p5, m6, mj6, m7, mj7]
-notes22 = [m2, mj2]
-notes26 = [m6, mj6]
-notes27 = [m7, mj7]
-notes3 = [major, minor, aug, dim, sus4]
-notes4 = [major7th, dominant7th, minor7th]
-
-#
 chords = note3_basic
+chords = note3_var
 #chords = notes4
 #chords = [minor7th]
 
@@ -108,103 +23,7 @@ chords = note3_basic
 #chords =notes2
 #chords=notes26 + notes27
 
-Transpose=True
-Random=False
-
 Window.size = (500, 500)
-
-
-class playChords():
-    def __init__(self, chords, print_root=True, note_range=NOTE_RANGE, arpeggio=False, delay=0.01) -> None:
-
-        self.chords = chords
-        self.print_root = print_root
-        self.arpeggio = False
-        self.delay = delay  # delay between notes for arpeggio
-
-        self.note_range = note_range  # range of root note
-
-        m.init()            # MIDIデバイスを初期化
-        self.get_midi_devices()
-        #device_id = 2
-        device_id =3
-
-        print("device_id:", device_id)
-        self.midiout = m.Output(device_id)
-
-    def get_midi_devices(self):
-        n_midi = m.get_count()  # MIDIデバイスの数
-        print("# of devices: ", n_midi)
-        for i in range(n_midi):
-            print("{}: {}".format(i, m.get_device_info(i)))  # MIDIデバイスの情報を表示
-
-    def chord_on(self, chord, root=0, vel=60, force_arpeggio=None):
-        for n in chord:
-            vel_n = vel
-            if (force_arpeggio == None and self.arpeggio) or (force_arpeggio or self.arpeggio):
-                time.sleep(self.delay)
-
-            if n == chord[0]:
-                vel_n = vel_n+35 if chord[-1]-chord[0] < 12 else vel_n + 10
-            if n == chord[-1]:
-                vel_n += 25
-            vel_n += rnd.randint(-15, 15)
-
-            if vel_n > 127:
-                vel_n = 127
-            if vel_n < 0:
-                vel_n = 0
-
-            self.midiout.note_on(root + n,  vel_n)
-
-    def chord_off(self, chord, root=0):
-        for n in chord:
-            self.midiout.note_off(root + n)
-
-    # def select_progression(self):
-    #     self.progression = rnd.randint(0, len(self.chords)-1)
-    #     if type(self.progression)==list:
-    #          self.progression=[self.progression]
-
-    def select_chord(self):
-        root = rnd.randint(self.note_range[0], self.note_range[1])
-
-        chord_id = rnd.randint(0, len(self.chords)-1)
-        if len(self.chords[chord_id]) == 2:
-            chord_name = "{1}/{0}".format(
-                midi_names[root], names[self.chords[chord_id]])
-        else:
-            chord_name = "{}{}".format(
-                midi_names[root], names[self.chords[chord_id]])
-
-        return(chord_id, root, chord_name)
-
-    def close(self):
-        self.midiout.close()
-        m.quit()
-
-    def main(self):
-        """
-        Call this function for sound training without visual information.
-        """
-        duration = 3
-
-        for i in range(20):
-            chord, root, chord_name = self.select_chord()
-            print(re.sub('[.*]','',chord_name))
-            notes = self.chords[chord]
-            print(len(notes))
-            if len(notes) == 4 and Transpose:
-                if (Random and rnd.randint(0, 2) == 0) or not Random:
-                    notes = [notes[0]-24, notes[3]-12, notes[1], notes[2]]
-                    print("transposed")
-
-            self.chord_on(notes, root=root)
-            time.sleep(duration)
-            self.chord_off(notes, root=root)
-
-        self.midiout.close()
-        m.quit()
 
 
 class LabelWidget(Widget):
@@ -235,6 +54,7 @@ class ChordWidget(Widget):
 
     def __init__(self, *args, **kwargs):
         Widget.__init__(self, *args, **kwargs)
+        print("args",*args, **kwargs)
         self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
         self._keyboard.bind(on_key_down=self.on_keyboard_down)
 
@@ -347,14 +167,18 @@ class ChordWidget(Widget):
     def transpose7th(self, notes):
         return notes[0]-24,  notes[3]-12, notes[1], notes[2]
 
-    def update(self, dt):
+    def update(self, dt, mode="chord"):
         if self.t == 0:
-            self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
+            if mode == "chord":
+                self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
+                self.notes = self.chords[self.chord_id]
 
-            self.notes = self.chords[self.chord_id]
-            if len(self.notes) == 4 and Transpose == True:
-                if (Random and rnd.randint(0, 2) == 0) or not Random:
-                    self.notes = self.transpose7th(self.notes)
+                if len(self.notes) == 4 and Transpose == True:
+                    if (Random and rnd.randint(0, 2) == 0) or not Random:
+                        self.notes = self.transpose7th(self.notes)
+
+            elif mode =="progressio":
+                self.chord_id, self.root, self.chord_name = self.play_chords.select_progression()
 
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
@@ -377,8 +201,7 @@ class ChordApp(App):
         #Clock.schedule_interval(chord.update, chord.dt)
         return chord
 
-
-if __name__ == '__main__':
+def main():
     # Run below if you want Visual info
     ChordApp().run()
 
@@ -386,4 +209,5 @@ if __name__ == '__main__':
     # play_chords=playChords(chords=chords)
     # play_chords.main()
 
-    exit()
+if __name__ == '__main__':
+    main()
