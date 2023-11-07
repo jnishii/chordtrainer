@@ -138,10 +138,10 @@ class ChordWidget(Widget):
 
         return True
 
-    def update_canvas(self, notes, chord_id):
+    def update_canvas(self, notes):
         # https://matplotlib.org/stable/tutorials/colors/colormaps.html
         #   self.rgb = plt.cm.Pastel1(self.chord) # get rgb of Pastel1
-        rgb = plt.cm.Accent(chord_id)  # get rgb of Accent
+        rgb = plt.cm.Accent(self.chords.index(notes))  # get rgb of Accent
         # print(rgb)
 
         chord_vec = np.array(notes, dtype=np.float64)
@@ -170,22 +170,21 @@ class ChordWidget(Widget):
     def update(self, dt, mode="chord"):
         if self.t == 0:
             if mode == "chord":
-                self.chord_id, self.root, self.chord_name = self.play_chords.select_chord()
-                self.notes = self.chords[self.chord_id]
+                self.notes, self.root, self.chord_name = self.play_chords.select_chord()
 
                 if len(self.notes) == 4 and Transpose == True:
                     if (Random and rnd.randint(0, 2) == 0) or not Random:
                         self.notes = self.transpose7th(self.notes)
 
             elif mode =="progressio":
-                self.chord_id, self.root, self.chord_name = self.play_chords.select_progression()
+                self.notes, self.root, self.chord_name = self.play_chords.select_progression()
 
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
             self.chord_label.reset(chordname=self.chord_name)
             print(re.sub('\[[a-zA-Z0-9=/]*\]|\.','',self.chord_name))
 
-        self.update_canvas(self.notes, self.chord_id)
+        self.update_canvas(self.notes)
         self.chord_label.update()
 
         self.t += dt

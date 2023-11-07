@@ -99,10 +99,11 @@ diatonic_chords = {
     "harmonic_minor": [minor, dim, aug, minor, major, major, dim],
     }
 degree_names = {
-    "major": ["I", "ii", "iii", "IV", "V", "vi", "vii"],
-    "minor": ["i", "ii", "III", "iv", "v", "VI", "VII"],
-    "harmonic_minor": ["i", "ii", "III+", "iv", "V", "VI", "vii\u00B0"],
+    "major": ["I", "ii", "iii", "IV", "V", "vi", "vii\u00B0"],
+    "minor": ["i", "ii\u00B0", "III", "iv", "v", "VI", "VII"],
+    "harmonic_minor": ["i", "ii\u00B0", "III+", "iv", "V", "VI", "vii\u00B0"],
     }
+
 p_1251 = [1,2,5,1] # roman numeral
 
 # basic definition
@@ -134,8 +135,8 @@ class playChords():
 
         m.init()            # MIDIデバイスを初期化
         self.get_midi_devices()
-        #device_id = 3
-        device_id =2
+        #device_id = 2
+        device_id = 3
 
         print("device_id:", device_id)
         self.midiout = m.Output(device_id)
@@ -173,6 +174,8 @@ class playChords():
         root = rnd.randint(self.note_range[0], self.note_range[1])
 
         chord_id = rnd.randint(0, len(self.chords)-1)
+        notes = self.chords[chord_id]
+
         if len(self.chords[chord_id]) == 2:
             chord_name = "{1}/{0}".format(
                 midi_names[root], names[self.chords[chord_id]])
@@ -180,25 +183,26 @@ class playChords():
             chord_name = "{}{}".format(
                 midi_names[root], names[self.chords[chord_id]])
 
-        return(chord_id, root, chord_name)
+        return(notes, root, chord_name)
 
     def select_progression(self):
+        progression_root = 69
         if self.n_progression == 0:
             # select root note
             progression_root = rnd.randint(self.note_range[0], self.note_range[1])
 
-        next_chord = self.progression[self.n_progression] # roman numeral
-        root = progression_root + diatonic_scale_midi[self.scale][next_chord] # midi note of root
-        chord_id = diatonic_chords[self.scale][next_chord] # major/minor/dim/aug
+        chord_degree = self.progression[self.n_progression] # roman numeral
+        root = progression_root + diatonic_scale_midi[self.scale][chord_degree] # midi note of root
+        notes = diatonic_chords[self.scale][chord_degree]
         
         self.n_progression += 1
         if self.n_progression == len(self.progression):
             self.n_progression = 0
 
         chord_name = "{}{}".format(
-            midi_names[root], degree_names[self.scale][next_chord])
+            midi_names[root], degree_names[self.scale][chord_degree])
 
-        return(chord_id, root, chord_name)
+        return(notes, root, chord_name)
 
     def close(self):
         self.midiout.close()
@@ -212,14 +216,14 @@ class playChords():
 
         for i in range(20):
             if self.mode == "chord":
-                chord, root, chord_name = self.select_chord()
-                print(chord,root,chord_name)
+                notes, root, chord_name = self.select_chord()
+                print(notes,root,chord_name)
+                print(re.sub('[.*]','',chord_name))
+                #notes = self.chords[chord]                
             else:
-                chord, root, chord_name = self.select_progression()
-                print(chord,root,chord_name)
+                notes, root, chord_name = self.select_progression()
+                print(notes,root,chord_name)
 
-            print(re.sub('[.*]','',chord_name))
-            notes = self.chords[chord]
             print(len(notes))
             if len(notes) == 4 and Transpose:
                 if (Random and rnd.randint(0, 2) == 0) or not Random:
