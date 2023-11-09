@@ -25,7 +25,6 @@ chords = note3_var
 
 Window.size = (500, 500)
 
-
 class LabelWidget(Widget):
     alpha = NumericProperty(1)
     fontsize = NumericProperty(60)
@@ -58,15 +57,22 @@ class ChordWidget(Widget):
         self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
         self._keyboard.bind(on_key_down=self.on_keyboard_down)
 
+        ##### parameters ##### 
+        #self.mode = "chord"  # "chord" or "progression"
+        self.mode = "progression"
+        #self.interval = 6  # interval between chords
+        self.interval = 2  # interval between chords
+
+        #####
+
         self.chords = chords  # Todo: chords should be given by an arg or menu
         print_root = False if len(self.chords[0]) == 2 else True
         self.play_chords = playChords(
             chords=chords, print_root=print_root, delay=0.1)
 
-        self.duration = 6  # duration of each chord
         self.t = 0  # time from new chord appearance
         self.dt = 0.01  # dt of animation update
-        n_step = self.duration/self.dt  # total time step per chord
+        n_step = self.interval/self.dt  # total time step per chord
 
         self.chord_label.initialize(n_step)
 
@@ -117,7 +123,7 @@ class ChordWidget(Widget):
                     self.notes, root=self.root, force_arpeggio=False)
             case 'q' | 'escape':
                 self.play_chords.chord_off(self.notes, root=self.root)
-                self.play_chords.midiout.close()
+                self.play_chords.close()
                 quit()
             case 't':
                 self.play_chords.arpeggio = not self.play_chords.arpeggio
@@ -141,7 +147,11 @@ class ChordWidget(Widget):
     def update_canvas(self, notes):
         # https://matplotlib.org/stable/tutorials/colors/colormaps.html
         #   self.rgb = plt.cm.Pastel1(self.chord) # get rgb of Pastel1
-        rgb = plt.cm.Accent(self.chords.index(notes))  # get rgb of Accent
+        if notes in chords:
+            rgb = plt.cm.Accent(self.chords.index(notes))  # get rgb of Accent
+        else:
+            rgb = plt.cm.Accent(note3_all.index(notes))
+  
         # print(rgb)
 
         chord_vec = np.array(notes, dtype=np.float64)
@@ -167,17 +177,16 @@ class ChordWidget(Widget):
     def transpose7th(self, notes):
         return notes[0]-24,  notes[3]-12, notes[1], notes[2]
 
-    def update(self, dt, mode="chord"):
+    def update(self, dt):
         if self.t == 0:
-            if mode == "chord":
+            if self.mode == "chord":
                 self.notes, self.root, self.chord_name = self.play_chords.select_chord()
-
                 if len(self.notes) == 4 and Transpose == True:
                     if (Random and rnd.randint(0, 2) == 0) or not Random:
                         self.notes = self.transpose7th(self.notes)
 
-            elif mode =="progressio":
-                self.notes, self.root, self.chord_name = self.play_chords.select_progression()
+            else:
+                self.notes, self.root, self.chord_name, terminal = self.play_chords.select_progression()
 
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
@@ -188,7 +197,7 @@ class ChordWidget(Widget):
         self.chord_label.update()
 
         self.t += dt
-        if self.t > self.duration:
+        if self.t > self.interval:
             self.t = 0
             self.play_chords.chord_off(
                 self.notes, root=self.root)

@@ -3,7 +3,8 @@ import re
 import random as rnd
 import re
 import time
-import pygame.midi as m
+import mido
+# import pygame.midi as m
 import warnings
 warnings.simplefilter('ignore')
 
@@ -64,6 +65,7 @@ names3 = {
 
 note3_basic = [major, minor, dim]
 note3_var = [dim, aug, sus4]
+note3_all = note3_basic + note3_var
 
 # 4 notes
 major7th = (0, 4, 7, 11) # base + minor
@@ -88,7 +90,7 @@ notes2long= notes26 + notes27
 notes3 = [major, minor, aug, dim, sus4]
 notes4 = [major7th, dominant7th, minor7th]
 
-# for chord progression
+######## for chord progression
 diatonic_scale_midi = {
     "major": [0, 2, 4, 5, 7, 9, 11], 
     "minor": [0, 2, 3, 5, 7, 8, 10]
@@ -122,7 +124,7 @@ class playChords():
 
         self.chords = chords
         self.print_root = print_root
-        self.arpeggio = False
+        self.arpeggio = arpeggio
         self.delay = delay  # delay between notes for arpeggio
 
         self.note_range = note_range  # range of root note
@@ -133,19 +135,27 @@ class playChords():
         self.mode = mode
         self.n_progression = 0 # progression counter
 
-        m.init()            # MIDIデバイスを初期化
-        self.get_midi_devices()
-        #device_id = 2
-        device_id = 3
+        self.player = mido.open_output('IAC Driver pioneer')
 
-        print("device_id:", device_id)
-        self.midiout = m.Output(device_id)
+        # m.init()            # MIDIデバイスを初期化
+        # self.get_midi_devices()
+        # #device_id = 2
+        # device_id = 3
+
+        # print("device_id:", device_id)
+        # self.midiout = m.Output(device_id)
 
     def get_midi_devices(self) -> None:
         n_midi = m.get_count()  # MIDIデバイスの数
         print("# of devices: ", n_midi)
         for i in range(n_midi):
             print("{}: {}".format(i, m.get_device_info(i)))  # MIDIデバイスの情報を表示
+
+    def note_on(self, note, vel=60, time=5):
+        self.player.send(mido.Message('note_on', note=note, velocity = vel, time=time))
+
+    def note_off(self, note, vel=60, time=5):
+        self.player.send(mido.Message('note_off', note=note, velocity = vel, time=time))
 
     def chord_on(self, chord, root=0, vel=60, force_arpeggio=None):
         for n in chord:
@@ -154,7 +164,7 @@ class playChords():
                 time.sleep(self.delay)
 
             if n == chord[0]:
-                vel_n = vel_n+35 if chord[-1]-chord[0] < 12 else vel_n + 10
+                vel_n = vel_n + 35 if chord[-1]-chord[0] < 12 else vel_n + 15
             if n == chord[-1]:
                 vel_n += 25
             vel_n += rnd.randint(-15, 15)
@@ -164,11 +174,11 @@ class playChords():
             if vel_n < 0:
                 vel_n = 0
 
-            self.midiout.note_on(root + n,  vel_n)
+            self.note_on(root + n,  vel_n)
 
     def chord_off(self, chord, root=0):
         for n in chord:
-            self.midiout.note_off(root + n)
+            self.note_off(root + n)
 
     def select_chord(self):
         root = rnd.randint(self.note_range[0], self.note_range[1])
@@ -186,54 +196,54 @@ class playChords():
         return(notes, root, chord_name)
 
     def select_progression(self):
-        progression_root = 69
+
+        terminal = False # True if the progression is finished
+        # select root for new progression
         if self.n_progression == 0:
-            # select root note
-            progression_root = rnd.randint(self.note_range[0], self.note_range[1])
+            self.progression_root = rnd.randint(self.note_range[0], self.note_range[1])
 
         chord_degree = self.progression[self.n_progression] # roman numeral
-        root = progression_root + diatonic_scale_midi[self.scale][chord_degree] # midi note of root
-        notes = diatonic_chords[self.scale][chord_degree]
-        
+        root = self.progression_root + diatonic_scale_midi[self.scale][chord_degree-1] # midi note of root
+        notes = diatonic_chords[self.scale][chord_degree-1]
         self.n_progression += 1
         if self.n_progression == len(self.progression):
             self.n_progression = 0
+            terminal = True
 
-        chord_name = "{}{}".format(
-            midi_names[root], degree_names[self.scale][chord_degree])
+        chord_name = "{}{}, {}".format(
+            midi_names[root], names[diatonic_chords[self.scale][chord_degree-1]], degree_names[self.scale][chord_degree-1])
 
-        return(notes, root, chord_name)
+        return(notes, root, chord_name, terminal)
 
     def close(self):
-        self.midiout.close()
-        m.quit()
+        self.player.close()
 
-    def main(self):
+    def main(self, interval=3):
         """
         Call this function for sound training without visual information.
         """
-        duration = 3
 
         for i in range(20):
             if self.mode == "chord":
                 notes, root, chord_name = self.select_chord()
-                print(notes,root,chord_name)
+                terminal = False
+                #print(notes,root,chord_name)
                 print(re.sub('[.*]','',chord_name))
                 #notes = self.chords[chord]                
             else:
-                notes, root, chord_name = self.select_progression()
+                notes, root, chord_name, terminal = self.select_progression()
                 print(notes,root,chord_name)
 
-            print(len(notes))
             if len(notes) == 4 and Transpose:
                 if (Random and rnd.randint(0, 2) == 0) or not Random:
                     notes = [notes[0]-24, notes[3]-12, notes[1], notes[2]]
                     print("transposed")
 
             self.chord_on(notes, root=root)
-            time.sleep(duration)
+            time.sleep(interval)
+            if terminal:
+                time.sleep(interval*2)
             self.chord_off(notes, root=root)
 
-        self.midiout.close()
-        m.quit()
+        self.close()
 

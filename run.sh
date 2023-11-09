@@ -1,2 +1,4 @@
-poetry run python -m chordtrainer
+#!/bin/bash
+#poetry run python -m chordtrainer
+python -m chordtrainer
 
