@@ -13,7 +13,7 @@ from kivy.clock import Clock
 
 chords = note3_basic
 chords = note3_var
-#chords = notes4
+chords = notes4
 #chords = [minor7th]
 
 #chords = [dominant7th, major7th]
@@ -22,6 +22,8 @@ chords = note3_var
 #chords = [major, minor]
 #chords =notes2
 #chords=notes26 + notes27
+
+chords = p_56451
 
 Window.size = (500, 500)
 
@@ -57,16 +59,19 @@ class ChordWidget(Widget):
         self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
         self._keyboard.bind(on_key_down=self.on_keyboard_down)
 
-        ##### parameters ##### 
-        #self.mode = "chord"  # "chord" or "progression"
-        self.mode = "progression"
-        #self.interval = 6  # interval between chords
-        self.interval = 2  # interval between chords
-
-        #####
-
         self.chords = chords  # Todo: chords should be given by an arg or menu
-        print_root = False if len(self.chords[0]) == 2 else True
+
+        print_root = True
+        if type(chords) is list:
+            self.mode = "chord"
+            self.interval = 6  # interval between chords
+            if len(self.chords[0]) == 2:
+                print_root = False
+        else:
+            self.mode = "progression"
+            self.interval = 2  # interval between chords
+        
+        #####
         self.play_chords = playChords(
             chords=chords, print_root=print_root, delay=0.1)
 
@@ -150,7 +155,7 @@ class ChordWidget(Widget):
         if notes in chords:
             rgb = plt.cm.Accent(self.chords.index(notes))  # get rgb of Accent
         else:
-            rgb = plt.cm.Accent(note3_all.index(notes))
+            rgb = plt.cm.Accent(note3_all.index(compress_chord(notes)))
   
         # print(rgb)
 
@@ -180,18 +185,18 @@ class ChordWidget(Widget):
     def update(self, dt):
         if self.t == 0:
             if self.mode == "chord":
-                self.notes, self.root, self.chord_name = self.play_chords.select_chord()
+                self.notes, self.root, chord_name = self.play_chords.select_chord()
                 if len(self.notes) == 4 and Transpose == True:
                     if (Random and rnd.randint(0, 2) == 0) or not Random:
                         self.notes = self.transpose7th(self.notes)
 
             else:
-                self.notes, self.root, self.chord_name, terminal = self.play_chords.select_progression()
+                self.notes, self.root, chord_name, terminal = self.play_chords.select_progression()
 
             self.play_chords.chord_on(self.notes, root=self.root)
             self.reset_canvas()
-            self.chord_label.reset(chordname=self.chord_name)
-            print(re.sub('\[[a-zA-Z0-9=/]*\]|\.','',self.chord_name))
+            self.chord_label.reset(chordname=chord_name)
+            print(re.sub('\[[a-zA-Z0-9=/]*\]|\.','', chord_name))
 
         self.update_canvas(self.notes)
         self.chord_label.update()

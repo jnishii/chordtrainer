@@ -63,7 +63,7 @@ names3 = {
     major: "", minor: "[sub]m[/sub]", aug: "[sup]-5[/sup]", dim: "[sub]dim[/sub]", sus4: "[sub]sus4[/sub]",
 }
 
-note3_basic = [major, minor, dim]
+note3_basic = [major, minor]
 note3_var = [dim, aug, sus4]
 note3_all = note3_basic + note3_var
 
@@ -106,16 +106,50 @@ degree_names = {
     "harmonic_minor": ["i", "ii\u00B0", "III+", "iv", "V", "VI", "vii\u00B0"],
     }
 
-p_1251 = [1,2,5,1] # roman numeral
+M1={"degree":1, "notes":(-12,4,7,12)} # C|EGC
+M1_2={"degree":1, "notes":(0,4,7,12)} # |CEGC
+m1_2={"degree":1, "notes":(0,3,7,12)} # |CEbGC
+m2={"degree":2, "notes":(-10,2,5,9)}  # D|DFA
+M4={"degree":4, "notes":(-7,5,9,12)}  # F|FAC
+m4={"degree":4, "notes":(-7,5,8,12)}  # F|FAbC
+M5={"degree":5, "notes":(-5,2,7,11)}  # G|DGB
+m6={"degree":6, "notes":(-3,0,4,12)}  #A|CEC
+M6b={"degree":6, "notes":(-4,0,3,12)}  #Ab|CEbC
 
+
+p_1251 = {
+    "scale" : "major",
+    "progression":(M1, m2, M5, M1)
+}
+p_56451 = {
+    "scale" : "major",
+    "progression": (M5, m6, M4, M5, M1_2)
+}
+pm_56451 = {
+    "scale" : "harmonic_minor",
+    "progression": (M5, M6b, m4, M5, m1_2)
+}
+
+progression = pm_56451
 # basic definition
 Transpose=False
 Random=False
 scale = "major"
-chords = p_1251
+
+def compress_chord(chord):
+    """
+    Compress chord to 1 octave on the base note
+    """
+    chord = list(chord)
+    base = min(chord)
+    for i in range(len(chord)):
+        chord[i] = chord[i] - base
+        chord[i] = chord[i] % 12
+
+    return tuple(set(chord))
 
 class playChords():
-    def __init__(self, chords, progression=[1,2,5,1], scale="major", mode="chords", 
+    def __init__(self, chords, 
                  print_root=True, note_range=NOTE_RANGE, arpeggio=False, delay=0.01) -> None:
         """
         ARGS:
@@ -130,10 +164,13 @@ class playChords():
         self.note_range = note_range  # range of root note
 
         # for chord progression
-        self.scale = scale
-        self.progression = progression
-        self.mode = mode
-        self.n_progression = 0 # progression counter
+        if type(chords) is list:
+            self.mode = "chord"
+            self.interval = 6  # interval between chords
+        else:
+            self.mode = "progression"
+            self.interval = 1  # interval between chords
+            self.n_progression = 0 # progression counter
 
         self.player = mido.open_output('IAC Driver pioneer')
 
@@ -164,10 +201,10 @@ class playChords():
                 time.sleep(self.delay)
 
             if n == chord[0]:
-                vel_n = vel_n + 35 if chord[-1]-chord[0] < 12 else vel_n + 15
-            if n == chord[-1]:
-                vel_n += 25
-            vel_n += rnd.randint(-15, 15)
+                vel_n = vel_n + 15 if chord[-1]-chord[0] < 12 else vel_n + 10
+            if n == chord[0]:
+                vel_n += 20
+            vel_n += rnd.randint(-3, 3)
 
             if vel_n > 127:
                 vel_n = 127
@@ -200,50 +237,65 @@ class playChords():
         terminal = False # True if the progression is finished
         # select root for new progression
         if self.n_progression == 0:
-            self.progression_root = rnd.randint(self.note_range[0], self.note_range[1])
+            self.root = rnd.randint(self.note_range[0], self.note_range[1])
+            print("[on {}]----------".format(
+                re.sub('\[[a-zA-Z0-9=/]*\]|\.','', midi_names[self.root%12])))
 
-        chord_degree = self.progression[self.n_progression] # roman numeral
-        root = self.progression_root + diatonic_scale_midi[self.scale][chord_degree-1] # midi note of root
-        notes = diatonic_chords[self.scale][chord_degree-1]
+        scale = self.chords["scale"]
+        progression = self.chords["progression"]
+        chord_degree = progression[self.n_progression]["degree"] # roman numeral
+        notes = progression[self.n_progression]["notes"]
+
         self.n_progression += 1
-        if self.n_progression == len(self.progression):
+        if self.n_progression == len(progression):
             self.n_progression = 0
             terminal = True
 
-        chord_name = "{}{}, {}".format(
-            midi_names[root], names[diatonic_chords[self.scale][chord_degree-1]], degree_names[self.scale][chord_degree-1])
+        # for i in range(len(notes)):
+        #     print(note_names[notes[i]%12], end=" ")
 
-        return(notes, root, chord_name, terminal)
+        chord_name = "{}{}, {}".format(
+            midi_names[self.root + notes[0]], names[diatonic_chords[scale][chord_degree-1]], degree_names[scale][chord_degree-1])
+
+        return(notes, self.root, chord_name, terminal)
 
     def close(self):
         self.player.close()
 
     def main(self, interval=3):
         """
-        Call this function for sound training without visual information.
+        Call this function for ear training without visual information.
         """
 
-        for i in range(20):
-            if self.mode == "chord":
-                notes, root, chord_name = self.select_chord()
-                terminal = False
-                #print(notes,root,chord_name)
-                print(re.sub('[.*]','',chord_name))
-                #notes = self.chords[chord]                
-            else:
-                notes, root, chord_name, terminal = self.select_progression()
-                print(notes,root,chord_name)
+        while True:
+            try:
+                if self.mode == "chord":
+                    notes, root, chord_name = self.select_chord()
+                    terminal = False
+                    #print(notes,root,chord_name)
+                    #notes = self.chords[chord]
 
-            if len(notes) == 4 and Transpose:
-                if (Random and rnd.randint(0, 2) == 0) or not Random:
-                    notes = [notes[0]-24, notes[3]-12, notes[1], notes[2]]
-                    print("transposed")
+                    if len(notes) == 4 and Transpose:
+                        if (Random and rnd.randint(0, 2) == 0) or not Random:
+                            notes = [notes[0]-24, notes[3]-12, notes[1], notes[2]]
+                            print("transposed")
 
-            self.chord_on(notes, root=root)
-            time.sleep(interval)
-            if terminal:
-                time.sleep(interval*2)
-            self.chord_off(notes, root=root)
+                else:
+                    notes, root, chord_name, terminal = self.select_progression()
 
+    #            print(re.sub('[.*]','',chord_name))
+                print(re.sub('\[[a-zA-Z0-9=/]*\]|\.','', chord_name))
+
+
+                self.chord_on(notes, root=root)
+                time.sleep(interval)
+                if terminal:
+                    time.sleep(interval*2)
+                self.chord_off(notes, root=root)
+            
+            except KeyboardInterrupt:
+                break
+
+        print("bye")
         self.close()
 
